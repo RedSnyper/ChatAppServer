@@ -8,6 +8,7 @@ public class MultithreadServer extends Thread implements Serializable {
 
     private Socket socket;
     private ObjectInputStream objectInputStream;
+    private PrintWriter writer;
     private ServerConnect serverConnect = null;
 
     public MultithreadServer(Socket socket){
@@ -18,17 +19,39 @@ public class MultithreadServer extends Thread implements Serializable {
     @Override
     public void run()
     {
-        try{
+        boolean success; // for register success
+        boolean found;  // for login, record found or not found
+        try {
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
             objectInputStream = new ObjectInputStream(socket.getInputStream());
             serverConnect = (ServerConnect) objectInputStream.readObject();
-            System.out.println(serverConnect.getGender());
-            System.out.println(serverConnect.getPassword());
-            System.out.println(serverConnect.getRegEmailAddress());
-            System.out.println(serverConnect.getUserName());
-
             DbConnection dbConnection = new DbConnection();
-            dbConnection.pushRecords(serverConnect.getUserName(),serverConnect.getRegEmailAddress(),serverConnect.getGender(),serverConnect.getPassword());
 
+            if (serverConnect.getLoginType().equals("register")) {
+                boolean emailMatch;
+                String passwordString = new String(serverConnect.getPassword());
+                emailMatch = dbConnection.checkEmailDetail(serverConnect.getRegEmailAddress());
+                if(!emailMatch)
+                {
+                    success = dbConnection.pushRecords(serverConnect.getUserName(), serverConnect.getRegEmailAddress(), serverConnect.getGender(), passwordString);
+                    if (success) {
+                        System.out.println("Register Success");
+                        writer.println("registered");
+                    }
+                }else{
+                    System.out.println("Email clash");
+                    writer.println("sameEmail");
+                }
+            } else {
+                String loginPassword = new String(serverConnect.getLoginPassword());
+                found = dbConnection.checkLoginDetails(serverConnect.getLoginEmailAddress(), loginPassword);
+                if(found)
+                {
+                    System.out.println("Login Successful");
+                    writer.println("found");
+                }
+
+            }
         }catch(IOException e )
         {
 
@@ -40,8 +63,6 @@ public class MultithreadServer extends Thread implements Serializable {
         {
             System.out.println(e.getMessage());
         }
-
-
 
 
 //        int threadName = (int) Thread.currentThread().getId();
@@ -72,13 +93,5 @@ public class MultithreadServer extends Thread implements Serializable {
 //        {
 //            System.out.println(e.getMessage());
 //        }
-
-
-
     }
-
-
-
-
-
 }
