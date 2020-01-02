@@ -45,49 +45,55 @@ public class MultithreadServer extends Thread implements Serializable {
     public void run() {
         boolean success; // for register success
         boolean found;  // for login, record found or not found
+        try {
+            {
+                if (serverConnect.getLoginType().equals("register")) {
+                    boolean emailMatch;
+                    String passwordString = new String(serverConnect.getPassword());
+                    emailMatch = dbConnection.checkEmailDetail(serverConnect.getRegEmailAddress());
+                    if (!emailMatch) {
+                        success = dbConnection.pushRecords(serverConnect.getUserName(), serverConnect.getRegEmailAddress(), serverConnect.getGender(), passwordString);
+                        if (success) {
+                            System.out.println("Register Success");
+                            writer.println("registered");
+                            //writer.println("registered");
+                            //writer.write("registered\n");
 
-        if (serverConnect.getLoginType().equals("register")) {
-            boolean emailMatch;
-            String passwordString = new String(serverConnect.getPassword());
-            emailMatch = dbConnection.checkEmailDetail(serverConnect.getRegEmailAddress());
-            if (!emailMatch) {
-                success = dbConnection.pushRecords(serverConnect.getUserName(), serverConnect.getRegEmailAddress(), serverConnect.getGender(), passwordString);
-                if (success) {
-                    System.out.println("Register Success");
-                    writer.println("registered");
+                            //writer.close();
+                        }
+                    } else {
+                        System.out.println("Email clash");
+                        writer.println("sameEmail");
+                    }
+                } else if (serverConnect.getLoginType().equals("login")) {
+                    String loginPassword = new String(serverConnect.getLoginPassword());
+                    found = dbConnection.checkLoginDetails(serverConnect.getLoginEmailAddress(), loginPassword);
+                    if (found) {
+                        System.out.println("Login Successful");
+                        writer.println("found");
+                        // ChatAppServer chatAppServer = new ChatAppServer(socket);
+                        // String username = chatAppServer.getUserName(reader.readLine());
+                        //  writer.write(username);
+                    }
+
+                } else if (serverConnect.getLoginType().equals("online")) {
+                    try {
+
+                        records = dbConnection.getOnlineUsers();
+
+                        dbConnection.changeOnlineStatus(serverConnect.getLoginEmailAddress(), serverConnect.getOnlineStatus());
+                        Map.Entry<Integer, String> entry = records.entrySet().iterator().next();
+                        System.out.println(Arrays.asList(records));
+                    } catch (SQLException e) {
+                        System.out.println("Error in sqlException under  HashMap<Integer,String> records= dbConnection.getOnlineUsers() function " + e.getMessage());
+                    } catch (IOException e) {
+                        System.out.println("Error in writeObject(record) function" + e.getMessage());
+                    }
                 }
-            } else {
-                System.out.println("Email clash");
-                writer.println("sameEmail");
             }
-        } else if (serverConnect.getLoginType().equals("login")) {
-            String loginPassword = new String(serverConnect.getLoginPassword());
-            found = dbConnection.checkLoginDetails(serverConnect.getLoginEmailAddress(), loginPassword);
-            if (found) {
-                System.out.println("Login Successful");
-                writer.println("found");
-                   // ChatAppServer chatAppServer = new ChatAppServer(socket);
-                  // String username = chatAppServer.getUserName(reader.readLine());
-                 //  writer.write(username);
-            }
-
-          }else if(serverConnect.getLoginType().equals("online"))
-          {
-                try {
-
-                    records= dbConnection.getOnlineUsers();
-                    objectOutputStream.writeObject(records);
-                    dbConnection.changeOnlineStatus(serverConnect.getLoginEmailAddress(),serverConnect.getOnlineStatus());
-                    Map.Entry<Integer,String> entry = records.entrySet().iterator().next();
-                    System.out.println(Arrays.asList(records));
-                     }catch(SQLException e)
-                {
-                    System.out.println("Error in sqlException under  HashMap<Integer,String> records= dbConnection.getOnlineUsers() function " + e.getMessage());
-                }catch (IOException e)
-                {
-                    System.out.println("Error in writeObject(record) function" +e.getMessage());
-                }
-            }
+        } catch (Exception e) {
+           System.out.println(e.getMessage());
         }
     }
+}
 
