@@ -17,6 +17,7 @@ public class MultithreadServer extends Thread implements Serializable {
     private BufferedReader reader;
     private ObjectOutputStream objectOutputStream;
     private HashMap<Integer, String> records;
+    //private OutputStream outputStream;
 
     public HashMap<Integer, String> getRecords() {
         return records;
@@ -25,6 +26,7 @@ public class MultithreadServer extends Thread implements Serializable {
     public MultithreadServer(Socket socket) {
         try {
             this.socket = socket;
+       //     outputStream = socket.getOutputStream();
             writer = new PrintWriter(socket.getOutputStream(), true);
             objectInputStream = new ObjectInputStream(socket.getInputStream());
             serverConnect = (ServerConnect) objectInputStream.readObject();
@@ -74,24 +76,28 @@ public class MultithreadServer extends Thread implements Serializable {
                         // ChatAppServer chatAppServer = new ChatAppServer(socket);
                         // String username = chatAppServer.getUserName(reader.readLine());
                         //  writer.write(username);
+                    }else
+                    {
+                        writer.println("notfound");
                     }
 
                 } else if (serverConnect.getLoginType().equals("online")) {
                     try {
 
-                        records = dbConnection.getOnlineUsers();
 
+                        records = dbConnection.getOnlineUsers();
+                        System.out.println(serverConnect.getLoginEmailAddress());
+                        System.out.println(serverConnect.getOnlineStatus());
                         dbConnection.changeOnlineStatus(serverConnect.getLoginEmailAddress(), serverConnect.getOnlineStatus());
-                        Map.Entry<Integer, String> entry = records.entrySet().iterator().next();
                         System.out.println(Arrays.asList(records));
+                        objectOutputStream.writeObject(records);
                     } catch (SQLException e) {
                         System.out.println("Error in sqlException under  HashMap<Integer,String> records= dbConnection.getOnlineUsers() function " + e.getMessage());
-                    } catch (IOException e) {
-                        System.out.println("Error in writeObject(record) function" + e.getMessage());
                     }
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
            System.out.println(e.getMessage());
         }
     }
