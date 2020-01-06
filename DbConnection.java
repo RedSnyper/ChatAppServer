@@ -7,11 +7,11 @@ public class DbConnection {
     private Connection conn = null;
     private Statement stmt = null;
     private ResultSet resultSet = null;
-    private HashMap<Integer,String> recordMap = new HashMap<>();
+    private HashMap<String,String> recordMap = new HashMap<>();
 
     public DbConnection() throws SQLException {
         this.conn = DriverManager.getConnection(
-             "jdbc:mysql://localhost:3306/chatapp?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "");
+             "jdbc:mysql://localhost:3306/chatapp?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", ""); //setting up driver
         //"jdbc:mysql://localhost:3306/chatapp","root","");
         //TO FIX THE DATABASE AND SEVER TIME ISSUE.
         if(conn==null)
@@ -21,7 +21,8 @@ public class DbConnection {
 
     }
 
-    public boolean pushRecords(String username, String email, String gender, String password) {
+    public boolean pushRecords(String username, String email, String gender, String password) // called to register data
+    {
         try {
 
             String query = "INSERT INTO users (username, email, gender, password)" +
@@ -42,7 +43,7 @@ public class DbConnection {
             return false;
         }
     }
-    public boolean checkEmailDetail(String regEmail)
+    public boolean checkEmailDetail(String regEmail) // called to see if the same email exists or not
     {
         try{
             String query = "Select * from users where users.email='"+regEmail+"'";
@@ -62,7 +63,8 @@ public class DbConnection {
         }
     }
 
-    public boolean checkLoginDetails(String userEmail, String userPassword) {
+    public boolean checkLoginDetails(String userEmail, String userPassword) // called to see if login detail exists or not
+    {
         try {
             String query = "Select * from users where users.email='"+userEmail+ "' and users.password='"+userPassword+"'";
 //            String query = "Select * from users";
@@ -84,37 +86,60 @@ public class DbConnection {
     public HashMap getUserName(String email) throws SQLException
     {
 
-        String query = "Select * from users where users.email='"+ email +"'";
+        String query = "Select username from users where users.email='"+ email +"'";
         stmt = conn.createStatement();
         resultSet = stmt.executeQuery(query);
         if(resultSet.next())
         {
-            recordMap.put(resultSet.getInt("user_id"),resultSet.getString("username"));
+            recordMap.put(resultSet.getString("email"),resultSet.getString("username"));
             return recordMap;
         }
         return null;
     }
-    public void changeOnlineStatus(String userEmail,int onlineStatus) throws SQLException
+
+    public String getUserEmail(String name) // to get the useremail of the receiver.
+                                            // Did this to make it easy to program the serverConnect in ChatApp project for switching messages with unique email for all
+    {
+        try {
+            String query = "Select email from users where users.username='"+ name +"'";
+//            String query = "Select * from users";
+            stmt = conn.createStatement();
+            resultSet = stmt.executeQuery(query);
+            if(resultSet.next())
+            {
+
+                return resultSet.getString("email");
+            }else{
+                System.out.println("Login Record Not Found");
+                return null;
+            }
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+
+        }
+        return null;
+    }
+    public void changeOnlineStatus(String userEmail,int onlineStatus) throws SQLException // change the online status. Called when user logs into and when user quits the app in ChatApp project
     {
         String query =" Update users set login_status='"+onlineStatus+"' where users.email='"+ userEmail +"'";
         stmt = conn.createStatement();
         stmt.executeUpdate(query);
         if(stmt!=null) {
-            System.out.println("vayo");
+           // System.out.println("vayo");
         }else
         {
-            System.out.println("vayena");
+            System.out.println("Error in changeOnlineStatus");
         }
 
     }
-    public HashMap getOnlineUsers() throws SQLException
+    public HashMap getOnlineUsers() throws SQLException // gets all online user info and sends to server. This is called right after login is done in ChatApp project.
     {
         String query ="Select * from users where login_status=1";
         stmt = conn.createStatement();
         resultSet = stmt.executeQuery(query);
         while(resultSet.next())
         {
-            recordMap.put(resultSet.getInt("user_id"),resultSet.getString("username"));
+            recordMap.put(resultSet.getString("email"),resultSet.getString("username"));
         }
         return recordMap;
     }

@@ -14,7 +14,7 @@ public class Server {
         try {
             while(true) {
                 socket = serverSocket.accept();
-                MultithreadServer multithreadServer = new MultithreadServer(socket);
+                MultithreadServer multithreadServer = new MultithreadServer(socket); // makes new thread for every connection
                 multithreadServer.start();
             }
         } catch (Exception e) {
